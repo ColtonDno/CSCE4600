@@ -200,6 +200,7 @@ func loadProcesses(r io.Reader) ([]Process, error) {
 	for i := range rows {
 		processes[i].ProcessID = rows[i][0]
 		processes[i].BurstDuration = mustStrToInt(rows[i][1])
+		processes[i].RemainingTime = processes[i].BurstDuration
 		processes[i].ArrivalTime = mustStrToInt(rows[i][2])
 		if len(rows[i]) == 4 {
 			processes[i].Priority = mustStrToInt(rows[i][3])
