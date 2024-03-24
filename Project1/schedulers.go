@@ -180,7 +180,111 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 }
 
 func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
+	var (
+		totalWait       float64
+		totalTurnaround float64
+		lastCompletion  float64
+		i               int64
+		currentProcess  *Process
+		previousProcess *Process
+		queue           = make([]*Process, 0)
+		schedule        = make([][]string, len(processes))
+		gantt           = make([]TimeSlice, 0)
+	)
 
+	for i = 0; len(queue) > 0 || i == 0; i++ {
+		//Add processes to the queue at their arrival time
+		if i < int64(len(processes)) {
+			for j := range processes {
+				if processes[j].ArrivalTime == int64(i) {
+					queue = append(queue, &processes[j])
+				}
+			}
+		}
+
+		//Sort the queue by remaining run time
+		slices.SortFunc(queue,
+			func(a, b *Process) int {
+				return cmp.Compare(a.RemainingTime, b.RemainingTime)
+			})
+
+		//Sort the queue by priority
+		slices.SortFunc(queue,
+			func(a, b *Process) int {
+				return cmp.Compare(a.Priority, b.Priority)
+			})
+		currentProcess = queue[0]
+
+		//Update process times
+		currentProcess.RemainingTime--
+		for j := 1; j < len(queue); j++ {
+			queue[j].WaitTime++
+		}
+
+		/*fmt.Println(i)
+		if i > 0 {
+			fmt.Print(previousProcess.ProcessID)
+			fmt.Print(" -> ")
+		}
+		fmt.Println(currentProcess.ProcessID)
+		fmt.Println()*/
+
+		//When a process' run time reaches 0, set its completion time and remove it from the queue
+		for j := len(queue) - 1; j >= 0; j-- {
+			if queue[j].RemainingTime == 0 {
+				queue[j].CompletionTime = i - 1
+				queue = append(queue[:j], queue[j+1:]...)
+			}
+		}
+
+		if i != 0 && currentProcess.ProcessID != previousProcess.ProcessID {
+			gantt = append(gantt, TimeSlice{
+				PID:   previousProcess.ProcessID,
+				Start: previousProcess.StartTime,
+				Stop:  i,
+			})
+
+			currentProcess.StartTime = i
+		}
+
+		previousProcess = currentProcess
+	}
+
+	//Add the final process to the list
+	gantt = append(gantt, TimeSlice{
+		PID:   currentProcess.ProcessID,
+		Start: currentProcess.StartTime,
+		Stop:  int64(i),
+	})
+
+	for i := range processes {
+		var process *Process = &processes[i]
+		process.TurnaroundTime = process.BurstDuration + process.WaitTime
+		process.CompletionTime = process.TurnaroundTime + process.ArrivalTime
+
+		totalWait += float64(process.WaitTime)
+		totalTurnaround += float64(process.TurnaroundTime)
+		lastCompletion += float64(process.CompletionTime)
+
+		schedule[i] = []string{
+			fmt.Sprint(process.ProcessID),
+			fmt.Sprint(process.Priority),
+			fmt.Sprint(process.BurstDuration),
+			fmt.Sprint(process.ArrivalTime),
+			fmt.Sprint(process.WaitTime),
+			fmt.Sprint(process.TurnaroundTime),
+			fmt.Sprint(process.CompletionTime),
+		}
+	}
+
+	count := float64(len(processes))
+	aveWait := totalWait / count
+	aveTurnaround := totalTurnaround / count
+	aveThroughput := count / lastCompletion
+
+	outputTitle(w, title)
+	outputGantt(w, gantt)
+	outputSchedule(w, schedule, aveWait, aveTurnaround, aveThroughput)
 }
 
 func RRSchedule(w io.Writer, title string, processes []Process) {
@@ -213,14 +317,6 @@ func RRSchedule(w io.Writer, title string, processes []Process) {
 		for j := 1; j < len(queue); j++ {
 			queue[j].WaitTime++
 		}
-
-		/*fmt.Println(i)
-		if i > 0 {
-			fmt.Print(previousProcess.ProcessID)
-			fmt.Print(" -> ")
-		}
-		fmt.Println(currentProcess.ProcessID)
-		fmt.Println()*/
 
 		//When a process' run time reaches 0, set its completion time and remove it from the queue
 		for j := len(queue) - 1; j >= 0; j-- {
