@@ -100,19 +100,18 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 
 	for i = 0; len(queue) > 0 || i == 0; i++ {
 		//Add processes to the queue at their arrival time
-		if i < int64(len(processes)) {
-			for j := range processes {
-				if processes[j].ArrivalTime == int64(i) {
-					queue = append(queue, &processes[j])
-				}
+		for j := range processes {
+			if processes[j].ArrivalTime == int64(i) {
+				queue = append(queue, &processes[j])
+
+				//Sort the queue by remaining run time
+				slices.SortFunc(queue,
+					func(a, b *Process) int {
+						return cmp.Compare(a.RemainingTime, b.RemainingTime)
+					})
 			}
 		}
 
-		//Sort the queue by remaining run time
-		slices.SortFunc(queue,
-			func(a, b *Process) int {
-				return cmp.Compare(a.RemainingTime, b.RemainingTime)
-			})
 		currentProcess = queue[0]
 
 		//Update process times
@@ -194,25 +193,24 @@ func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
 
 	for i = 0; len(queue) > 0 || i == 0; i++ {
 		//Add processes to the queue at their arrival time
-		if i < int64(len(processes)) {
-			for j := range processes {
-				if processes[j].ArrivalTime == int64(i) {
-					queue = append(queue, &processes[j])
-				}
+		for j := range processes {
+			if processes[j].ArrivalTime == int64(i) {
+				queue = append(queue, &processes[j])
+
+				//Sort the queue by remaining run time
+				slices.SortFunc(queue,
+					func(a, b *Process) int {
+						return cmp.Compare(a.RemainingTime, b.RemainingTime)
+					})
+
+				//Sort the queue by priority
+				slices.SortFunc(queue,
+					func(a, b *Process) int {
+						return cmp.Compare(a.Priority, b.Priority)
+					})
 			}
 		}
 
-		//Sort the queue by remaining run time
-		slices.SortFunc(queue,
-			func(a, b *Process) int {
-				return cmp.Compare(a.RemainingTime, b.RemainingTime)
-			})
-
-		//Sort the queue by priority
-		slices.SortFunc(queue,
-			func(a, b *Process) int {
-				return cmp.Compare(a.Priority, b.Priority)
-			})
 		currentProcess = queue[0]
 
 		//Update process times
@@ -220,14 +218,6 @@ func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
 		for j := 1; j < len(queue); j++ {
 			queue[j].WaitTime++
 		}
-
-		/*fmt.Println(i)
-		if i > 0 {
-			fmt.Print(previousProcess.ProcessID)
-			fmt.Print(" -> ")
-		}
-		fmt.Println(currentProcess.ProcessID)
-		fmt.Println()*/
 
 		//When a process' run time reaches 0, set its completion time and remove it from the queue
 		for j := len(queue) - 1; j >= 0; j-- {
@@ -303,11 +293,9 @@ func RRSchedule(w io.Writer, title string, processes []Process) {
 
 	for i = 0; len(queue) > 0 || i == 0; i++ {
 		//Add processes to the queue at their arrival time
-		if i < int64(len(processes)) {
-			for j := range processes {
-				if processes[j].ArrivalTime == int64(i) {
-					queue = append(queue, &processes[j])
-				}
+		for j := range processes {
+			if processes[j].ArrivalTime == int64(i) {
+				queue = append(queue, &processes[j])
 			}
 		}
 		currentProcess = queue[0]
