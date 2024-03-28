@@ -1,11 +1,12 @@
 # CSCE4600
 
-Requires cmp and slices
-https://github.com/google/go-cmp
-https://cs.opensource.google/go/go/+/refs/tags/go1.22.1:src/slices/slices.go
+## Project 1: Process Scheduler
+A simple process scheduler that takes in a file containing example processes, and outputs a schedule based on the three different schedule types:
 
-To compile:
-go build <file path>
+First Come First Serve (FCFS)
+Shortest Job First (SJF) preemptive
+SJF Priority
+Round-robin (RR)
 
-To run (Windows):
-Project1.exe -<fcfs, fjf, sjfp, rr> <input file>
+## Project 2:
+n/a
