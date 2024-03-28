@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"fmt"
 	"io"
-	"math"
 	"slices"
 )
 
@@ -91,6 +90,7 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 		totalWait       float64
 		totalTurnaround float64
 		lastCompletion  float64
+		started         int64
 		time_step       int64
 		currentProcess  *Process
 		previousProcess *Process
@@ -100,21 +100,28 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 	)
 
 	//Increase the time until the process queue is empty
-	for time_step = 0; len(queue) > 0 || time_step == 0; time_step++ {
+	for time_step = 0; started == 0 || len(queue) > 0; time_step++ {
 		//Add processes to the queue at their arrival time
 		for j := range processes {
 			if processes[j].ArrivalTime == int64(time_step) {
 				queue = append(queue, &processes[j])
-
-				//Sort the queue by remaining run time
-				slices.SortFunc(queue,
-					func(a, b *Process) int {
-						return cmp.Compare(a.TimeRemaining, b.TimeRemaining)
-					})
+				started = 1
 			}
 		}
+		if started == 0 {
+			continue
+		}
 
+		//Sort the queue by remaining run time
+		slices.SortFunc(queue,
+			func(a, b *Process) int {
+				return cmp.Compare(a.TimeRemaining, b.TimeRemaining)
+			})
 		currentProcess = queue[0]
+
+		if previousProcess == nil || currentProcess != previousProcess {
+			currentProcess.StartTime = time_step
+		}
 
 		//Update process times
 		currentProcess.TimeRemaining--
@@ -131,14 +138,12 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 		}
 
 		//Add process to the gantt chart whenever a context switch occurs
-		if time_step != 0 && currentProcess.ProcessID != previousProcess.ProcessID {
+		if previousProcess != nil && currentProcess.ProcessID != previousProcess.ProcessID {
 			gantt = append(gantt, TimeSlice{
 				PID:   previousProcess.ProcessID,
 				Start: previousProcess.StartTime,
 				Stop:  time_step,
 			})
-
-			currentProcess.StartTime = time_step
 		}
 
 		previousProcess = currentProcess
@@ -182,7 +187,7 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 	count := float64(len(processes))
 	aveWait := totalWait / count
 	aveTurnaround := totalTurnaround / count
-	aveThroughput := count / lastCompletion
+	aveThroughput := count / (lastCompletion - 1)
 
 	outputTitle(w, title)
 	outputGantt(w, gantt)
@@ -194,6 +199,7 @@ func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
 		totalWait       float64
 		totalTurnaround float64
 		lastCompletion  float64
+		started         int64
 		time_step       int64
 		currentProcess  *Process
 		previousProcess *Process
@@ -203,27 +209,35 @@ func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
 	)
 
 	//Increase the time until the process queue is empty
-	for time_step = 0; len(queue) > 0 || time_step == 0; time_step++ {
+	for time_step = 0; started == 0 || len(queue) > 0; time_step++ {
 		//Add processes to the queue at their arrival time
 		for j := range processes {
 			if processes[j].ArrivalTime == int64(time_step) {
 				queue = append(queue, &processes[j])
-
-				//Sort the queue by remaining run time
-				slices.SortFunc(queue,
-					func(a, b *Process) int {
-						return cmp.Compare(a.TimeRemaining, b.TimeRemaining)
-					})
-
-				//Sort the queue by priority
-				slices.SortFunc(queue,
-					func(a, b *Process) int {
-						return cmp.Compare(a.Priority, b.Priority)
-					})
+				started = 1
 			}
 		}
+		if started == 0 {
+			continue
+		}
+
+		//Sort the queue by remaining run time
+		slices.SortFunc(queue,
+			func(a, b *Process) int {
+				return cmp.Compare(a.TimeRemaining, b.TimeRemaining)
+			})
+
+		//Sort the queue by priority
+		slices.SortFunc(queue,
+			func(a, b *Process) int {
+				return cmp.Compare(a.Priority, b.Priority)
+			})
 
 		currentProcess = queue[0]
+
+		if previousProcess == nil || currentProcess != previousProcess {
+			currentProcess.StartTime = time_step
+		}
 
 		//Update process times
 		currentProcess.TimeRemaining--
@@ -240,14 +254,12 @@ func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
 		}
 
 		//Add process to the gantt chart whenever a context switch occurs
-		if time_step != 0 && currentProcess.ProcessID != previousProcess.ProcessID {
+		if previousProcess != nil && currentProcess.ProcessID != previousProcess.ProcessID {
 			gantt = append(gantt, TimeSlice{
 				PID:   previousProcess.ProcessID,
 				Start: previousProcess.StartTime,
 				Stop:  time_step,
 			})
-
-			currentProcess.StartTime = time_step
 		}
 
 		previousProcess = currentProcess
@@ -316,15 +328,15 @@ func RRSchedule(w io.Writer, title string, processes []Process) {
 
 	//Increase the time until the process queue is empty
 	for time_step = 0; started == 0 || len(queue) > 0; time_step++ {
-		fmt.Println()
-		fmt.Print("Timestep: ")
-		fmt.Println(time_step)
+		// fmt.Println()
+		// fmt.Print("Timestep: ")
+		// fmt.Println(time_step)
 
 		//Add processes to the queue at their arrival time
 		for j := range processes {
 			if processes[j].ArrivalTime == int64(time_step) {
-				fmt.Print("Adding process - ID: ")
-				fmt.Println(processes[j].ProcessID)
+				// fmt.Print("Adding process - ID: ")
+				// fmt.Println(processes[j].ProcessID)
 				queue = append(queue, &processes[j])
 				started = 1
 			}
@@ -337,14 +349,14 @@ func RRSchedule(w io.Writer, title string, processes []Process) {
 		if previousProcess == nil || currentProcess != previousProcess {
 			currentProcess.StartTime = time_step
 
-			fmt.Print("Switched current processes - ID: ")
+			/*fmt.Print("Switched current processes - ID: ")
 			if previousProcess != nil {
 				fmt.Print(previousProcess.ProcessID)
 				fmt.Print(" -> ")
 			}
 			fmt.Print(currentProcess.ProcessID)
 			fmt.Print(", Start time: ")
-			fmt.Println(currentProcess.StartTime)
+			fmt.Println(currentProcess.StartTime)*/
 		}
 
 		//Move process to the back of the queue if it exceeds the time quantum
@@ -377,39 +389,39 @@ func RRSchedule(w io.Writer, title string, processes []Process) {
 		previousProcess = currentProcess
 
 		//When a process' run time reaches 0, set its completion time and remove it from the queue
-		for k := range queue {
-			fmt.Print(queue[k].ProcessID)
-			fmt.Print(", ")
-		}
-		fmt.Println()
+		// for k := range queue {
+		// fmt.Print(queue[k].ProcessID)
+		// fmt.Print(", ")
+		// }
+		// fmt.Println()
 
 		if queue[0].TimeRemaining == 0 {
 			if len(queue) == 1 {
 				break
 			} else {
-				fmt.Println("Process has completed")
+				// fmt.Println("Process has completed")
 				queue[0].CompletionTime = time_step - 1
 				queue = queue[1:]
-				for k := range queue {
-					fmt.Print(queue[k].ProcessID)
-					fmt.Print(", ")
-				}
-				fmt.Println()
+				// for k := range queue {
+				// fmt.Print(queue[k].ProcessID)
+				// fmt.Print(", ")
+				// }
+				// fmt.Println()
 			}
 		}
 
-		fmt.Print("# of steps in execution: ")
-		fmt.Println(time_step - queue[0].StartTime + 1)
+		// fmt.Print("# of steps in execution: ")
+		// fmt.Println(time_step - queue[0].StartTime + 1)
 		// If a process has hit the time quantum, it gets swapped out
 		if len(queue) > 1 && time_step-queue[0].StartTime+1 == timeQuantum {
-			fmt.Print("Shifting: ")
-			fmt.Println(timeQuantum)
+			// fmt.Print("Shifting: ")
+			// fmt.Println(timeQuantum)
 			queue = append(queue[1:], queue[0])
-			for k := range queue {
-				fmt.Print(queue[k].ProcessID)
-				fmt.Print(", ")
-			}
-			fmt.Println()
+			// for k := range queue {
+			// fmt.Print(queue[k].ProcessID)
+			// fmt.Print(", ")
+			// }
+			// fmt.Println()
 		}
 	}
 
@@ -451,7 +463,7 @@ func RRSchedule(w io.Writer, title string, processes []Process) {
 	count := float64(len(processes))
 	aveWait := totalWait / count
 	aveTurnaround := totalTurnaround / count
-	aveThroughput := math.Ceil((count/lastCompletion)*100) / 100
+	aveThroughput := count / (lastCompletion - 1)
 
 	outputTitle(w, title)
 	outputGantt(w, gantt)
