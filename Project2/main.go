@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"container/list"
 	"fmt"
 	"io"
 	"os"
@@ -23,6 +24,9 @@ func runLoop(r io.Reader, w, errW io.Writer, exit chan struct{}) {
 		err      error
 		readLoop = bufio.NewReader(r)
 	)
+	dirs := list.New()
+	history := make(map[int]string)
+
 	for {
 		select {
 		case <-exit:
@@ -37,7 +41,7 @@ func runLoop(r io.Reader, w, errW io.Writer, exit chan struct{}) {
 				_, _ = fmt.Fprintln(errW, err)
 				continue
 			}
-			if err = handleInput(w, input, exit); err != nil {
+			if err = handleInput(w, input, history, dirs, exit); err != nil {
 				_, _ = fmt.Fprintln(errW, err)
 			}
 		}
@@ -63,9 +67,12 @@ func printPrompt(w io.Writer) error {
 	return err
 }
 
-func handleInput(w io.Writer, input string, exit chan<- struct{}) error {
+func handleInput(w io.Writer, input string, history map[int]string, dirs *list.List, exit chan<- struct{}) error {
 	// Remove trailing spaces.
 	input = strings.TrimSpace(input)
+	// fmt.Printf("Adding %s. Size of history: %d\n", input, len(history))
+
+	history[len(history)] = input
 
 	// Split the input separate the command name and the command arguments.
 	args := strings.Split(input, " ")
@@ -78,6 +85,16 @@ func handleInput(w io.Writer, input string, exit chan<- struct{}) error {
 		return builtins.ChangeDirectory(args...)
 	case "env":
 		return builtins.EnvironmentVariables(w, args...)
+	case "pushd":
+		return builtins.PushDirectory(dirs, args...)
+	case "popd":
+		return builtins.PopDirectory(dirs, args...)
+	case "dirs":
+		return builtins.PrintDirectory(dirs, args...)
+	case "history":
+		return builtins.PrintHistory(history, args...)
+	case "quit":
+		fallthrough
 	case "exit":
 		exit <- struct{}{}
 		return nil
