@@ -13,46 +13,38 @@ func PopDirectory(dirs *list.List, args ...string) error {
 		new_args []string
 	)
 
-	if len(args) == 0 {
-		if dirs.Len() == 0 {
-			fmt.Println("popd: directory stack empty")
-			return nil
-		}
+	dir := dirs.Front()
 
-		dirs.Remove(dirs.Front())
-		PrintDirectory(dirs, new_args...)
+	if dir == nil {
+		fmt.Println("popd: directory stack empty")
 		return nil
-	} else if len(args) > 1 {
-		return nil //.err?
 	}
 
-	if args[0] == "-v" {
-		new_args = append(new_args, "-v")
-		dirs.Remove(dirs.Front())
-		PrintDirectory(dirs, new_args...)
+	for i := 0; i < len(args); i++ {
+		if args[i] == "-v" {
+			new_args = append(new_args, "-v")
 
-	} else if args[0] == "-l" {
-		new_args = append(new_args, "-l")
-		dirs.Remove(dirs.Front())
-		PrintDirectory(dirs, new_args...)
+		} else if args[i] == "-l" {
+			new_args = append(new_args, "-l")
 
-	} else if args[0], found = strings.CutPrefix(args[0], "+"); found {
-		entry, err := strconv.Atoi(args[0])
+		} else if args[i], found = strings.CutPrefix(args[i], "+"); found {
+			entry, err := strconv.Atoi(args[i])
 
-		if err != nil {
-			return err
-		} else if entry > dirs.Len() {
-			return nil //.err?
+			if err != nil {
+				return err
+			} else if entry > dirs.Len() {
+				return nil //.err?
+			}
+
+			for i := 0; i < entry; i++ {
+				dir = dir.Next()
+			}
+
 		}
-
-		dir := dirs.Front()
-		for i := 0; i < entry; i++ {
-			dir = dir.Next()
-		}
-
-		dirs.Remove(dir)
-		PrintDirectory(dirs, new_args...)
 	}
+
+	dirs.Remove(dir)
+	PrintDirectory(dirs, new_args...)
 
 	return nil
 }

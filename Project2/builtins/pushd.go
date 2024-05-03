@@ -34,8 +34,8 @@ func PushDirectory(dirs *list.List, args ...string) error {
 			new_args = append(new_args, "-l")
 
 		} else if args[i], found = strings.CutPrefix(args[i], "+"); found {
-			index, _ := strconv.Atoi(args[i])
-			if index > dirs.Len() {
+			index, err := strconv.Atoi(args[i])
+			if index > dirs.Len() || err != nil {
 				return nil //. err
 			}
 
