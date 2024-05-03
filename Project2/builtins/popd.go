@@ -46,7 +46,7 @@ func PopDirectory(dirs *list.List, args ...string) error {
 		}
 
 		dir := dirs.Front()
-		for i := 1; i < entry; i++ {
+		for i := 0; i < entry; i++ {
 			dir = dir.Next()
 		}
 
