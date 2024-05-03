@@ -20,9 +20,10 @@ func replaceAt(s string, i int, c rune) string {
 
 func PushDirectory(dirs *list.List, args ...string) error {
 	var (
-		found    bool
-		new_args []string
-		dir      string
+		found      bool
+		empty_args []string
+		new_args   []string
+		dir        string
 	)
 
 	for i := 0; i < len(args); i++ {
@@ -45,7 +46,7 @@ func PushDirectory(dirs *list.List, args ...string) error {
 
 			dirs.MoveToFront(target_dir)
 
-			dir_err := ChangeDirectory(new_args...)
+			dir_err := ChangeDirectory(empty_args...)
 			if dir_err != nil {
 				return dir_err
 			}
@@ -95,7 +96,7 @@ func PushDirectory(dirs *list.List, args ...string) error {
 	if len(args) == 0 && dirs.Len() > 1 {
 		dirs.MoveToFront(dirs.Front().Next())
 
-		dir_err := ChangeDirectory(new_args...)
+		dir_err := ChangeDirectory(empty_args...)
 		if dir_err != nil {
 			return dir_err
 		}
