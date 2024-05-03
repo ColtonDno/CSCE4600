@@ -38,6 +38,30 @@ func PushDirectory(dirs *list.List, args ...string) error {
 				return nil //. err
 			}
 
+			target_dir := dirs.Front()
+			for i := 0; i < index; i++ {
+				target_dir = target_dir.Next()
+			}
+
+			dirs.MoveToFront(target_dir)
+
+			dir_err := ChangeDirectory(new_args...)
+			if dir_err != nil {
+				return dir_err
+			}
+
+			dir = dirs.Front().Value.(string)
+			dir, _ := strings.CutPrefix(dir, "/")
+
+			if dir == "" {
+				fmt.Println("Failed to parse dir")
+				return nil
+			}
+			dir_err = ChangeDirectory(dir)
+			if dir_err != nil {
+				return dir_err
+			}
+
 		} else if args[i][i] == '/' {
 			new_dir, _ := strings.CutPrefix(args[i], "/")
 			dir_err := ChangeDirectory(new_dir)
