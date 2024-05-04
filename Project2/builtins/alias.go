@@ -3,11 +3,12 @@ package builtins
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
 func CheckForAlias(aliases map[string]string, name string) (string, bool) {
-	// Return the alias command if it exists
+	// Return the alias commands if it exists
 	if aliases[name] != "" {
 		return aliases[name], true
 	}
@@ -15,11 +16,26 @@ func CheckForAlias(aliases map[string]string, name string) (string, bool) {
 	return name, false
 }
 
+func AddAlias(aliases map[string]string, str []rune) {
+	r := regexp.MustCompile("^[^ /$'=\"]+=.+")
+	match := r.MatchString(string(str))
+
+	strs := strings.Split(string(str), "=")
+
+	if !match {
+		fmt.Printf("alias: '%s': invalid alias name\n", strs[0])
+		return
+	}
+
+	aliases[strs[0]] = strs[1]
+}
+
 func SetAlias(aliases map[string]string, args ...string) error {
 	var (
-		found_pre bool
-		found_suf bool
-		print     bool = false
+		print         bool = false
+		commands      [][]rune
+		command_count int  = 0
+		found_equal   bool = false
 	)
 
 	if len(args) > 1 {
@@ -28,7 +44,6 @@ func SetAlias(aliases map[string]string, args ...string) error {
 		}
 
 		args[0] = strings.Join(args, " ")
-		args[0], _ = strings.CutSuffix(args[0], "-p")
 	}
 
 	// Print aliases
@@ -40,32 +55,33 @@ func SetAlias(aliases map[string]string, args ...string) error {
 		return nil
 	}
 
-	r := regexp.MustCompile(".+=\".+\"")
-	match := r.MatchString(args[0])
+	str := []rune(args[0])
+	commands = make([][]rune, 1)
+	commands[0] = make([]rune, 0)
 
-	if !match {
-		fmt.Println("Failed to match regex")
-		return nil //. err
+	for i := len(str) - 1; i >= 0; i-- {
+		if str[i] == ' ' && found_equal {
+			command_count++
+			commands = append(commands, make([]rune, 0))
+			found_equal = false
+			continue
+		}
+
+		if str[i] != '"' {
+			commands[command_count] = append(commands[command_count], str[i])
+		}
+
+		if str[i] == '=' {
+			found_equal = true
+		}
 	}
 
-	strs := strings.Split(args[0], "=")
-
-	if strings.ContainsAny(strs[0], " /$'=\"") {
-		fmt.Println("Alias contains an invalid character")
-		return nil //. err
+	slices.Reverse(commands)
+	for _, command := range commands {
+		slices.Reverse(command)
+		AddAlias(aliases, command)
+		// fmt.Printf("%s\n", string(command))
 	}
-
-	strs[1], found_pre = strings.CutPrefix(strs[1], "\"")
-	strs[1], found_suf = strings.CutSuffix(strs[1], "\"")
-
-	if !found_pre || !found_suf {
-		fmt.Println("Did not start with a \"")
-		return nil //. error
-	}
-
-	aliases[strs[0]] = strs[1]
 
 	return nil
 }
-
-// alias first="cd .."
