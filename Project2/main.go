@@ -105,6 +105,8 @@ func handleInput(w io.Writer, input string, history map[int]string, dirs *list.L
 		return builtins.PushDirectory(dirs, args...)
 	case "popd":
 		return builtins.PopDirectory(dirs, args...)
+	case "unalias":
+		return builtins.UnsetAlias(aliases, args...)
 	case "quit":
 		fallthrough
 	case "exit":
