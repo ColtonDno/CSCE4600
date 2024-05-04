@@ -69,21 +69,30 @@ func printPrompt(w io.Writer) error {
 }
 
 func handleInput(w io.Writer, input string, history map[int]string, dirs *list.List, aliases map[string]string, exit chan<- struct{}) error {
+	var (
+		new_command string
+		isAlias     bool
+	)
+
 	// Remove trailing spaces.
 	input = strings.TrimSpace(input)
-	// fmt.Printf("Adding %s. Size of history: %d\n", input, len(history))
 
 	history[len(history)] = input
 
 	// Split the input separate the command name and the command arguments.
 	args := strings.Split(input, " ")
 	name, args := args[0], args[1:]
+	new_command = name
 
-	// Check if the incoming command is an alias
-	new_command, isAlias := builtins.CheckForAlias(aliases, name)
+	for new_command == name {
+		// Check if the incoming command is an alias
+		new_command, isAlias = builtins.CheckForAlias(aliases, name)
 
-	// name was an alias so split the new command
-	if isAlias {
+		// name was an alias so split the new command
+		if !isAlias {
+			break
+		}
+
 		args = strings.Split(new_command, " ")
 		name, args = args[0], args[1:]
 	}
