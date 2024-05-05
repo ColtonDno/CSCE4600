@@ -2,6 +2,7 @@ package builtins
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,7 +10,9 @@ import (
 )
 
 var (
-// ErrInvalidArgCount = errors.New("invalid argument count")
+	ErrInvalidIndex = errors.New("directory stack index out of range")
+	ErrNotDir       = errors.New("no such file or directory")
+	ErrMissingDir   = errors.New("directory no longer exists")
 )
 
 func replaceAt(s string, i int, c rune) string {
@@ -35,8 +38,11 @@ func PushDirectory(dirs *list.List, args ...string) error {
 
 		} else if args[i], found = strings.CutPrefix(args[i], "+"); found {
 			index, err := strconv.Atoi(args[i])
-			if index > dirs.Len() || err != nil {
-				return nil //. err
+
+			if err != nil {
+				return err
+			} else if index > dirs.Len() {
+				return fmt.Errorf("pushd: +%d: %w", index, ErrInvalidIndex)
 			}
 
 			target_dir := dirs.Front()
@@ -46,6 +52,12 @@ func PushDirectory(dirs *list.List, args ...string) error {
 
 			dirs.MoveToFront(target_dir)
 
+			cur_dir, err := os.Getwd()
+
+			if err != nil {
+				return err
+			}
+
 			dir_err := ChangeDirectory(empty_args...)
 			if dir_err != nil {
 				return dir_err
@@ -54,21 +66,25 @@ func PushDirectory(dirs *list.List, args ...string) error {
 			dir = dirs.Front().Value.(string)
 			dir, _ := strings.CutPrefix(dir, "/")
 
-			if dir == "" {
-				fmt.Println("Failed to parse dir")
-				return nil
-			}
 			dir_err = ChangeDirectory(dir)
+
 			if dir_err != nil {
-				return dir_err
+				dirs.Remove(dirs.Front())
+				dir_err = ChangeDirectory(cur_dir)
+
+				if dir_err != nil {
+					return fmt.Errorf("pushd: failed to restore original directory")
+				}
+
+				return fmt.Errorf("pushd: %w", ErrMissingDir)
 			}
 
-		} else if args[i][i] == '/' {
+		} else {
 			new_dir, _ := strings.CutPrefix(args[i], "/")
 			dir_err := ChangeDirectory(new_dir)
 
 			if dir_err != nil {
-				return dir_err
+				return fmt.Errorf("pushd: %s: %w", args[i], ErrNotDir)
 			}
 
 			cur_dir, err := os.Getwd()
@@ -87,15 +103,19 @@ func PushDirectory(dirs *list.List, args ...string) error {
 			}
 
 			dirs.PushBack(cur_dir)
-		} else {
-			fmt.Println("Invalid arguements")
-			return nil
 		}
 	}
 
 	if len(args) == 0 && dirs.Len() > 1 {
 		dirs.MoveToFront(dirs.Front().Next())
 
+		cur_dir, err := os.Getwd()
+
+		if err != nil {
+			return err
+		}
+
+		//Change to home directory
 		dir_err := ChangeDirectory(empty_args...)
 		if dir_err != nil {
 			return dir_err
@@ -104,13 +124,17 @@ func PushDirectory(dirs *list.List, args ...string) error {
 		dir = dirs.Front().Value.(string)
 		dir, _ := strings.CutPrefix(dir, "/")
 
-		if dir == "" {
-			fmt.Println("Failed to parse dir")
-			return nil
-		}
 		dir_err = ChangeDirectory(dir)
+
 		if dir_err != nil {
-			return dir_err
+			dirs.Remove(dirs.Front())
+			dir_err = ChangeDirectory(cur_dir)
+
+			if dir_err != nil {
+				return fmt.Errorf("pushd: failed to restore original directory")
+			}
+
+			return fmt.Errorf("pushd: %w", ErrMissingDir)
 		}
 	}
 

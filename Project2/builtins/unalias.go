@@ -1,18 +1,43 @@
 package builtins
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+var (
+	ErrInvalidOpt = errors.New("invalid option")
+)
 
 func UnsetAlias(aliases map[string]string, args ...string) error {
+	var (
+		found         bool
+		unalias_usage string = "unalias: usage: unalias [-a] name"
+	)
 
-	if len(args) != 1 {
-		return fmt.Errorf("invalid argument count: expected zero or one arguments (directory)")
+	if len(args) == 0 {
+		fmt.Println(unalias_usage)
+		return nil
 	}
 
-	if args[0] == "-a" {
-		clear(aliases)
+	if args[0], found = strings.CutPrefix(args[0], "-"); found {
+		if args[0] == "a" {
+			clear(aliases)
+			return nil
+		} else {
+			return fmt.Errorf("unalias: -%s: %w\n%s", args[0], ErrInvalidOpt, unalias_usage)
+		}
 	}
 
-	delete(aliases, args[0])
+	for _, arg := range args {
+		if _, found = CheckForAlias(aliases, arg); found {
+			delete(aliases, arg)
+		} else {
+			fmt.Printf("unalias: %s: not found\n", arg)
+		}
+
+	}
 
 	return nil
 }

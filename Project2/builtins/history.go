@@ -25,7 +25,6 @@ func PrintHistory(history map[int]string, args ...string) error {
 		} else if _, err := strconv.Atoi(args[i]); err == nil {
 			print_from, _ = strconv.Atoi(args[i])
 			print_from = len(history) - print_from
-			fmt.Printf("Set print_from to %d\n", print_from)
 		}
 	}
 

@@ -2,8 +2,13 @@ package builtins
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"strings"
+)
+
+var (
+	ErrInvalidArg = errors.New("invalid number")
 )
 
 func PrintDirectory(dirs *list.List, args ...string) error {
@@ -12,16 +17,15 @@ func PrintDirectory(dirs *list.List, args ...string) error {
 		home_dir          = HomeDir
 		new_line   bool   = false
 		print_home bool   = false
+		dirs_usage string = "dirs: usage: dirs [-clv]"
 	)
 
 	for i := 0; i < len(args); i++ {
 
 		if args[i] == "-v" {
-			if new_line {
-				return nil //. Dup argument err?
+			if strings.Contains(str, " ") {
+				str = replaceAt(str, strings.Index(str, " "), '\n')
 			}
-
-			str = replaceAt(str, strings.Index(str, " "), '\n')
 			new_line = true
 
 		} else if args[i] == "-c" {
@@ -29,30 +33,24 @@ func PrintDirectory(dirs *list.List, args ...string) error {
 			return nil
 
 		} else if args[i] == "-l" {
-			if print_home {
-				return nil //. Dup argument err?
-			}
-
-			x := len(HomeDir)
+			x := len(home_dir)
 			for i := 0; i < x; i++ {
 				if home_dir[i] == '\\' {
 					home_dir = replaceAt(home_dir, i, '/')
 				}
 			}
 			home_dir, _ = strings.CutPrefix(home_dir, "C:/")
-
 			str = strings.Replace(str, "~", "%s", -1)
 
 			print_home = true
 
 		} else {
-			fmt.Println("Invalid arguements")
-			return nil
+			return fmt.Errorf("dirs: %s: %w\n%s", args[i], ErrInvalidArg, dirs_usage)
 		}
 	}
 
 	if dirs.Len() == 0 {
-		return nil //.err?
+		return nil
 	}
 
 	for dir := dirs.Front(); dir != nil; dir = dir.Next() {

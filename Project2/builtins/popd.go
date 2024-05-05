@@ -2,9 +2,14 @@ package builtins
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+)
+
+var (
+	ErrDirStackEmpty = errors.New("directory stack empty")
 )
 
 func PopDirectory(dirs *list.List, args ...string) error {
@@ -16,7 +21,7 @@ func PopDirectory(dirs *list.List, args ...string) error {
 	dir := dirs.Front()
 
 	if dir == nil {
-		fmt.Println("popd: directory stack empty")
+		fmt.Println("popd: %w", ErrDirStackEmpty)
 		return nil
 	}
 
@@ -28,15 +33,15 @@ func PopDirectory(dirs *list.List, args ...string) error {
 			new_args = append(new_args, "-l")
 
 		} else if args[i], found = strings.CutPrefix(args[i], "+"); found {
-			entry, err := strconv.Atoi(args[i])
+			index, err := strconv.Atoi(args[i])
 
 			if err != nil {
 				return err
-			} else if entry > dirs.Len() {
-				return nil //.err?
+			} else if index > dirs.Len() {
+				return fmt.Errorf("pushd: +%d: %w", index, ErrInvalidIndex)
 			}
 
-			for i := 0; i < entry; i++ {
+			for i := 0; i < index; i++ {
 				dir = dir.Next()
 			}
 
