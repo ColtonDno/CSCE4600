@@ -63,7 +63,7 @@ func SetAlias(aliases map[string]string, args ...string) error {
 		found_quote   int = 0
 	)
 
-	if len(args) > 1 {
+	if len(args) > 0 {
 		if args[0] == "-p" {
 			print = true
 		}
