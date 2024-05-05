@@ -45,6 +45,7 @@ func runLoop(r io.Reader, w, errW io.Writer, exit chan struct{}) {
 			if err = handleInput(w, input, history, dirs, aliases, exit); err != nil {
 				_, _ = fmt.Fprintln(errW, err)
 			}
+			fmt.Println()
 		}
 	}
 }
@@ -62,8 +63,23 @@ func printPrompt(w io.Writer) error {
 		return err
 	}
 
+	hd, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	dir, found := strings.CutPrefix(wd, hd)
+
+	var print_dir string = "%v \n"
+	if found {
+		print_dir = "~" + print_dir
+	} else {
+		dir = strings.ReplaceAll(dir, "/", "\\")
+	}
+
 	// /home/User [Username] $
-	_, err = fmt.Fprintf(w, "%v [%v] $ ", wd, u.Username)
+	colored_output := fmt.Sprintf("\x1b[%dm%s\x1b[%dm%s\x1b[%dm%s\x1b[0m", 32, "%v ", 93, print_dir, 37, "$ ")
+	_, err = fmt.Fprintf(w, colored_output, u.Username, dir)
 
 	return err
 }
@@ -116,8 +132,6 @@ func handleInput(w io.Writer, input string, history map[int]string, dirs *list.L
 		return builtins.PopDirectory(dirs, args...)
 	case "unalias":
 		return builtins.UnsetAlias(aliases, args...)
-	case "quit":
-		fallthrough
 	case "exit":
 		exit <- struct{}{}
 		return nil
