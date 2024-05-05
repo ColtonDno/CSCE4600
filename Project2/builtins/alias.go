@@ -17,15 +17,40 @@ func CheckForAlias(aliases map[string]string, name string) (string, bool) {
 }
 
 func AddAlias(aliases map[string]string, str []rune) {
-	r := regexp.MustCompile("^[^ /$'=\"]+=.+")
+	r := regexp.MustCompile("^[^ /$'=\"]+=((\"+[^\"]+\"+$)|([^\" \n]+$))")
 	match := r.MatchString(string(str))
 
-	strs := strings.Split(string(str), "=")
+	strs := strings.SplitN(string(str), "=", 2)
 
-	if !match {
-		fmt.Printf("alias: '%s': invalid alias name\n", strs[0])
+	if len(strs) == 1 {
+		if aliases[strs[0]] == "" {
+			fmt.Printf("alias: %s: not found\n", strs[0])
+		} else {
+			fmt.Printf("%s='%s'\n", strs[0], aliases[strs[0]])
+		}
 		return
 	}
+
+	if !match {
+		r = regexp.MustCompile("^[^ /$'=\"]+$")
+		match = r.MatchString(strs[0])
+
+		if !match {
+			fmt.Printf("alias: '%s': invalid alias name\n", strs[0])
+		}
+
+		r = regexp.MustCompile("((\"+[^\"]+\"+$)|([^\" \n]+$))")
+		match = r.MatchString(strs[1])
+
+		if !match {
+			fmt.Printf("alias: '%s': invalid command\n", strs[1])
+		}
+
+		return
+	}
+
+	temp := strings.Split(strs[1], "\"")
+	strs[1] = strings.Join(temp, "")
 
 	aliases[strs[0]] = strs[1]
 }
@@ -34,8 +59,8 @@ func SetAlias(aliases map[string]string, args ...string) error {
 	var (
 		print         bool = false
 		commands      [][]rune
-		command_count int  = 0
-		found_equal   bool = false
+		command_count int = 0
+		found_quote   int = 0
 	)
 
 	if len(args) > 1 {
@@ -59,28 +84,28 @@ func SetAlias(aliases map[string]string, args ...string) error {
 	commands = make([][]rune, 1)
 	commands[0] = make([]rune, 0)
 
+	//Seperate commands
 	for i := len(str) - 1; i >= 0; i-- {
-		if str[i] == ' ' && found_equal {
+		if str[i] == ' ' && found_quote == 0 {
 			command_count++
 			commands = append(commands, make([]rune, 0))
-			found_equal = false
 			continue
 		}
 
-		if str[i] != '"' {
-			commands[command_count] = append(commands[command_count], str[i])
-		}
+		commands[command_count] = append(commands[command_count], str[i])
 
-		if str[i] == '=' {
-			found_equal = true
+		if str[i] == '"' {
+			found_quote++
+		} else if str[i] == '=' && found_quote == 2 {
+			found_quote = 0
 		}
 	}
 
+	//Add commands
 	slices.Reverse(commands)
 	for _, command := range commands {
 		slices.Reverse(command)
 		AddAlias(aliases, command)
-		// fmt.Printf("%s\n", string(command))
 	}
 
 	return nil
