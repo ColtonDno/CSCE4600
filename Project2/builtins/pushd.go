@@ -102,7 +102,7 @@ func PushDirectory(dirs *list.List, args ...string) error {
 				}
 			}
 
-			dirs.PushBack(cur_dir)
+			dirs.PushFront(cur_dir)
 		}
 	}
 
