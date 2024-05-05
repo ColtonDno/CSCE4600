@@ -109,7 +109,7 @@ func readData(args []string) (io.Reader, error) {
 	return r, nil
 }
 
-func openProcessingFile(args ...string) (*os.File, func(), error) {
+/*func openProcessingFile(args ...string) (*os.File, func(), error) {
 	if len(args) != 2 {
 		return nil, nil, fmt.Errorf("%w: must give a scheduling file to process", ErrInvalidArgs)
 	}
@@ -125,7 +125,7 @@ func openProcessingFile(args ...string) (*os.File, func(), error) {
 	}
 
 	return f, closeFn, nil
-}
+}*/
 
 //region Output helpers
 

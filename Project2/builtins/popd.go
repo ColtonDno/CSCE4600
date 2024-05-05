@@ -44,7 +44,11 @@ func PopDirectory(dirs *list.List, args ...string) error {
 	}
 
 	dirs.Remove(dir)
-	PrintDirectory(dirs, new_args...)
+	err := PrintDirectory(dirs, new_args...)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
