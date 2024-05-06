@@ -1,37 +1,43 @@
 # Project 2: Shell Builtins
+A simple shell implemented in GO
 
 ## Description
 
-For this project we'll be adding commands to a simple shell. 
+For this project, I added 6 commands to the shell:
 
-The shell is already written, but you will choose five (5) shell builtins (or shell-adjacent) commands to rewrite into Go, and integrate into the Go shell.
+- history [-chr] [n]
+- pushd [-lv] [+n]
+- popd [-lv] [+n]
+- dirs [-lvc]
+- alias [-p] [name[=value] …]
+- unalias [-a] [name … ]
 
-There are many builtins or shell-adjacent commands to pick from: 
-[Bourne Shell Builtins](https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html), 
-[Bash Builtins](https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html,), and 
-[Built-in csh and tcsh Commands](https://docstore.mik.ua/orelly/linux/lnut/ch08_09.htm).
+Both the command history and aliases were implemented using a map and the directory stack was implemented with a list. All three data structures are created at the start of the run loop and passed along as needed.
 
-Feel free to pick from `sh`, `bash`, `csh`, `tcsh`, `ksh` or `zsh` builtins... or if you have something else in mind, ping me and we'll work it out.
+As soon as an input is received, it gets put into the history map. The size of the map is used as the key since no entries can be removed unless the map is cleared.
 
-As an example, two shell builtins have already been added to the package builtins:
-
-- `cd`
-- `env`
+When a command is executed, it is first checked to determine if it is an alias. If it is not, the program continues as usual. If the command is an alias, it gets split into the command name and arguments. The new command is again checked if its an alias. This process continues until the command is no longer an alias, and it is then executed.
 
 ## Steps
 
 1. Clone down the example input/output and skeleton `main.go`:
 
-    `git clone https://github.com/jh125486/CSCE4600`
+  `git clone https://github.com/ColtonDno/CSCE4600`
  
 2. Copy the `Project2` files to your own git project.
 
-    1. In your `go.mod`, replace "jh125486" in the module line with your GitHub name, e.g.:
+  1. In your `go.mod`, replace "ColtonDno" in the module line with your GitHub name, e.g.:
 
-      - "module github.com/jh125486/CSCE4600" changes to "module github.com/CoolStudent123/CSCE4600"
-  
-    2. In the `main.go`, replace "jh125486" in the imports with your package path, e.g.:
+    - "module github.com/ColtonDno/CSCE4600" changes to "module github.com/CoolProfOrTA123/CSCE4600"
 
-      - "github.com/jh125486/CSCE4600/Project2/builtins" changes to "github.com/CoolStudent123/CSCE4600/Project2/builtins"
+  2. In the `main.go`, replace "ColtonDno" in the imports with your package path, e.g.:
 
-3. Start editing the `main.go` command switch (lines 57-64) and the package `builtins` with your chosen commands.
+    - "github.com/ColtonDno/CSCE4600/Project2/builtins" changes to "github.com/CoolProfOrTA123/CSCE4600/Project2/builtins"
+      
+3. To compile the code:
+
+  `go build <file path>`
+    
+4. To run the code (Windows):
+
+  `./Project2.exe`

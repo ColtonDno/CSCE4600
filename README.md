@@ -11,4 +11,4 @@ SJF Priority
 Round-robin (RR)
 
 ## Project 2:
-n/a
+A simple shell implemented in GO
