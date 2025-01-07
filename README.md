@@ -10,5 +10,12 @@ Shortest Job First (SJF) preemptive
 SJF Priority
 Round-robin (RR)
 
-## Project 2:
-A simple shell implemented in GO
+## Project 2: Shell Builtins
+A simple shell implemented in GO with 6 commands.
+
+- history [-chr] [n]
+- pushd [-lv] [+n]
+- popd [-lv] [+n]
+- dirs [-lvc]
+- alias [-p] [name[=value] …]
+- unalias [-a] [name … ]
